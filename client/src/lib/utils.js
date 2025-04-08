@@ -14,7 +14,7 @@ export function formatChatTime(createdAt) {
     return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
   }
 }
-export const validateForm = (formData) => {
+export const validateForm = (formData,toast) => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   const usernameRegex = /^[a-zA-Z0-9_]{3,16}$/; 
 

@@ -100,7 +100,7 @@ const Login = () => {
 <button
   type="button"
   className="btn btn-outline w-full flex items-center justify-center gap-2"
-  onClick={() => window.open("http://localhost:5001/auth/google", "_self")}
+  onClick={() => window.open("https://cochat-4vrg.onrender.com/auth/google", "_self")}
   
 >
   <GoogleIcon className="size-5" />

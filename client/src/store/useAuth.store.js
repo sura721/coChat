@@ -3,7 +3,7 @@ import { axiosInstance } from "../lib/axios.lib";
 import axios from "axios";
 import toast from "react-hot-toast";
 import {io} from "socket.io-client"
-const BACKEND_URL="http://localhost:5001"
+const BACKEND_URL="https://cochat-4vrg.onrender.com"
 
 export const useAuthStore = create((set,get) => ({
   authUser: null,

@@ -30,8 +30,6 @@ A fully functional, real-time chat application built with the **MERN Stack (Mong
 
 ---
 
-## 📸 Screenshots
-
 
 
 ## 🚀 Tech Stack

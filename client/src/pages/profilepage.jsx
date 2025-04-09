@@ -239,7 +239,7 @@ const ProfilePage = () => {
         </a>
 
         <button
-          onClick={() => setShowCodeConfirmation(false)} // Close code confirmation dialog
+          onClick={() => setShowCodeConfirmation(false)} 
           className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-300"
         >
           Cancel

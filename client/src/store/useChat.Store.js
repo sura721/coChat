@@ -12,14 +12,14 @@ export const useChatStore = create((set, get) => ({
   isUsersLoading: false,
   isSending: false,
   getUsers: async () => {
-    set({ isUsersLoading: true }); // Assuming isUsersLoading was intended
+    set({ isUsersLoading: true });  
     try {
       const res = await axiosInstance.get("/message/users");
       set({ users: res.data });
     } catch (err) {
-      // Handle error appropriately
+   
     } finally {
-      set({ isUsersLoading: false }); // Assuming isUsersLoading was intended
+      set({ isUsersLoading: false });
     }
   },
   getMessages: async (userId) => {

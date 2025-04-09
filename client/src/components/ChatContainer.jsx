@@ -25,10 +25,8 @@ const ChatContainer = () => {
       getMessages(selectedUser._id);
       listenToMessage();
     }
-    return () => {
-      unlistenToMessage();
-    };
-  }, [selectedUser?._id, getMessages, listenToMessage, unlistenToMessage]);
+    return () => unlistenToMessage();
+  }, [selectedUser?._id]);
 
   const messageEnd = useRef(null);
 

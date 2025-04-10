@@ -21,7 +21,7 @@ const App = () => {
 
   }, [checkAuth]);
 
-  if (isCheckingAuth && !authUser)
+  if (isCheckingAuth)
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#17212b]">
         <Loader className="size-10 animate-spin text-[#71808a]" />

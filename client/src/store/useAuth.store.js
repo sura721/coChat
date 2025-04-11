@@ -30,6 +30,7 @@ checkAuth: async () => {
 
     if (typeof get().connectSocket === 'function') {
       get().connectSocket(); 
+set({isCheckingAuth:false})
     }
   } catch (err) {
    

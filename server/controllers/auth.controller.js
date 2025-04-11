@@ -267,10 +267,6 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-
-
-
-
 export const getMe = async (req, res) => {
   try {
     let user;

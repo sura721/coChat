@@ -64,12 +64,12 @@ app.use("/api/message", messageRouth);
 app.use("/api/users", friendshipRoute);
 app.use("/", googleRoute);
 
-
+app.get('/api/health', (req, res) => {
+    console.log(`[${new Date().toISOString()}] ChatApp Health check ping received.`); 
+    res.status(200).json({ status: 'ok', message: 'ChatApp server is healthy.' });
+  });
 const PORT = process.env.PORT || 5001;
 
 server.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-    console.log(`Node environment: ${nodeEnv}`); 
-    console.log(`Frontend URL allowed by CORS: ${frontendUrl}`); 
     connectDB();
 });

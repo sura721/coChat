@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuthStore } from "../store/useAuth.store";
 import { Camera, Mail, User, Notebook, Edit, ArrowLeft, AtSign, Save, XCircle } from "lucide-react";
-import { axiosInstance } from "../lib/axios.lib";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -10,27 +9,29 @@ const ProfilePage = () => {
   const navigate = useNavigate();
 
   const [selectedImg, setSelectedImg] = useState(null);
-  const [localFullname, setLocalFullname] = useState(authUser?.fullname || "");
-  const [localUsername, setLocalUsername] = useState(authUser?.username || "");
-  const [localBio, setLocalBio] = useState(authUser?.bio || "");
+  const [localFullname, setLocalFullname] = useState("");
+  const [localUsername, setLocalUsername] = useState("");
+  const [localBio, setLocalBio] = useState("");
 
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [confirmationCode, setConfirmationCode] = useState("");
 
   useEffect(() => {
-
     if (authUser && !isEditing) {
       setLocalFullname(authUser.fullname);
       setLocalUsername(authUser.username);
       setLocalBio(authUser.bio || "");
     }
-  }, [authUser, isEditing]); 
+  }, [authUser, isEditing]);
+
   const handleEditToggle = () => {
     if (isEditing) {
-      setLocalFullname(authUser.fullname);
-      setLocalUsername(authUser.username);
-      setLocalBio(authUser.bio || "");
+      if (authUser) {
+        setLocalFullname(authUser.fullname);
+        setLocalUsername(authUser.username);
+        setLocalBio(authUser.bio || "");
+      }
     }
     setIsEditing(!isEditing);
   };
@@ -65,7 +66,8 @@ const ProfilePage = () => {
       await updateProfile(dataToUpdate);
       setIsEditing(false);
     } catch (err) {
-      if (err?.response?.data?.field === 'username') {
+      toast.error(err?.response?.data?.message || "An error occurred while updating profile.");
+      if (err?.response?.data?.field === 'username' && authUser) {
           setLocalUsername(authUser.username);
       }
     }
@@ -83,31 +85,34 @@ const ProfilePage = () => {
       setSelectedImg(base64Image);
       try {
         await updateProfile({ profilePic: base64Image });
-        setSelectedImg(null); 
+        setSelectedImg(null);
       } catch (err) {
         toast.error(err?.response?.data?.message || "Failed to upload image.");
-        setSelectedImg(authUser.profilePic || "/avatar.png"); 
+        setSelectedImg(null);
       }
     };
   };
 
   const handleDeleteAccountSubmit = async (e) => {
     e.preventDefault();
+    if (!confirmationCode.trim()) {
+        toast.error("Please enter the confirmation code.");
+        return;
+    }
     try {
       await deleteAccount({ confirmationCode, email: authUser.email });
       setShowCodeConfirmation(false);
       setShowDeleteConfirmation(false);
-      navigate("/login"); 
+      setConfirmationCode("");
+      navigate("/login");
     } catch (err) {
-       // Error is handled by toast in store
     }
   };
-  
+
   const handleResendDeleteOTP = async () => {
     try {
       await resendOTP({ email: authUser.email });
     } catch (err) {
-        // Error is handled by toast in store
     }
   };
 
@@ -121,10 +126,17 @@ const ProfilePage = () => {
         setShowDeleteConfirmation(false);
         setShowCodeConfirmation(true);
     } catch (err) {
-        // Error handled by store
         setShowDeleteConfirmation(false);
     }
   }
+
+  useEffect(() => {
+    if (authUser && localFullname === "" && localUsername === "" && localBio === "") {
+        setLocalFullname(authUser.fullname);
+        setLocalUsername(authUser.username);
+        setLocalBio(authUser.bio || "");
+    }
+  }, [authUser, localBio, localFullname, localUsername]);
 
 
   if (!authUser) {
@@ -161,7 +173,7 @@ const ProfilePage = () => {
                     bg-base-content hover:scale-105
                     p-2 rounded-full cursor-pointer 
                     transition-all duration-200
-                    ${isUpdatingProfile ? "animate-pulse pointer-events-none" : ""}`}
+                    ${isUpdatingProfile && selectedImg ? "animate-pulse pointer-events-none" : ""}`}
                 >
                   <Camera className="w-5 h-5 text-base-100" />
                   <input
@@ -170,7 +182,7 @@ const ProfilePage = () => {
                     className="hidden"
                     accept="image/*"
                     onChange={handleImageUpload}
-                    disabled={isUpdatingProfile}
+                    disabled={isUpdatingProfile && selectedImg}
                   />
                 </label>
               </div>
@@ -187,12 +199,12 @@ const ProfilePage = () => {
                             className="btn btn-sm btn-success"
                             disabled={isUpdatingProfile}
                         >
-                            <Save size={16} /> Save
+                            <Save size={16} /> Save Changes
                         </button>
                     )}
                     <button
                         onClick={handleEditToggle}
-                        className={`btn btn-sm ${isEditing ? 'btn-ghost' : 'btn-outline'}`}
+                        className={`btn btn-sm ${isEditing ? 'btn-ghost' : 'btn-outline btn-primary'}`}
                         disabled={isUpdatingProfile && !isEditing}
                     >
                         {isEditing ? <><XCircle size={16}/> Cancel</> : <><Edit size={16}/> Edit Profile</>}
@@ -206,10 +218,10 @@ const ProfilePage = () => {
                 <input
                   id="fullname"
                   type="text"
-                  className={`input input-bordered w-full ${!isEditing ? 'input-disabled bg-base-200 !text-current !border-opacity-50' : 'bg-base-100'}`}
+                  className={`input input-bordered w-full ${!isEditing ? 'input-disabled !bg-base-200/70 !text-current !border-opacity-50 cursor-default' : 'bg-base-100'}`}
                   value={localFullname}
                   onChange={(e) => setLocalFullname(e.target.value)}
-                  readOnly={!isEditing || isUpdatingProfile}
+                  readOnly={!isEditing || (isUpdatingProfile && !selectedImg)}
                 />
               </div>
 
@@ -220,10 +232,10 @@ const ProfilePage = () => {
                 <input
                   id="username"
                   type="text"
-                  className={`input input-bordered w-full ${!isEditing ? 'input-disabled bg-base-200 !text-current !border-opacity-50' : 'bg-base-100'}`}
+                  className={`input input-bordered w-full ${!isEditing ? 'input-disabled !bg-base-200/70 !text-current !border-opacity-50 cursor-default' : 'bg-base-100'}`}
                   value={localUsername}
                   onChange={(e) => setLocalUsername(e.target.value)}
-                  readOnly={!isEditing || isUpdatingProfile}
+                  readOnly={!isEditing || (isUpdatingProfile && !selectedImg)}
                 />
               </div>
 
@@ -231,7 +243,7 @@ const ProfilePage = () => {
                 <label htmlFor="email" className="text-sm text-zinc-400 flex items-center gap-2">
                   <Mail className="w-4 h-4" /> Email Address
                 </label>
-                <p className="px-4 py-2.5 bg-base-200 rounded-lg border border-opacity-50">{authUser?.email}</p>
+                <p className="px-4 py-2.5 bg-base-200/70 rounded-lg border border-base-content/20 border-opacity-50">{authUser?.email}</p>
               </div>
 
               <div className="space-y-1.5">
@@ -240,11 +252,12 @@ const ProfilePage = () => {
                 </label>
                 <textarea
                   id="bio"
-                  className={`textarea textarea-bordered w-full min-h-24 ${!isEditing ? 'textarea-disabled bg-base-200 !text-current !border-opacity-50' : 'bg-base-100'}`}
+                  className={`textarea textarea-bordered w-full min-h-24 ${!isEditing ? 'textarea-disabled !bg-base-200/70 !text-current !border-opacity-50 cursor-default' : 'bg-base-100'}`}
                   value={localBio}
                   onChange={(e) => setLocalBio(e.target.value)}
-                  readOnly={!isEditing || isUpdatingProfile}
+                  readOnly={!isEditing || (isUpdatingProfile && !selectedImg)}
                   maxLength={200}
+                  rows={3}
                 />
                  {isEditing && <p className="text-xs text-right text-zinc-400">{localBio.length}/200</p>}
               </div>
@@ -267,6 +280,7 @@ const ProfilePage = () => {
                 <button
                   className="btn btn-error btn-outline"
                   onClick={openDeleteConfirmation}
+                  disabled={isUpdatingProfile}
                 >
                   Delete Account
                 </button>
@@ -278,7 +292,7 @@ const ProfilePage = () => {
             <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4">
               <div className="bg-base-100 p-6 rounded-lg space-y-4 shadow-xl w-full max-w-md">
                 <h3 className="text-lg font-semibold text-error">Delete Account Confirmation</h3>
-                <p className="text-sm">Are you sure you want to delete your account? This action is irreversible. We will send a confirmation code to your email.</p>
+                <p className="text-sm">Are you sure you want to delete your account? This action is irreversible. We will send a confirmation code to your email <span className="font-semibold">{authUser?.email}</span>.</p>
                 <div className="flex gap-4 justify-end">
                   <button
                     onClick={() => setShowDeleteConfirmation(false)}
@@ -290,7 +304,7 @@ const ProfilePage = () => {
                     onClick={confirmDeletionAndRequestOTP}
                     className="btn btn-error"
                   >
-                    Yes, Delete
+                    Yes, Send Code & Delete
                   </button>
                 </div>
               </div>
@@ -306,30 +320,33 @@ const ProfilePage = () => {
                   <input
                     type="text"
                     value={confirmationCode}
-                    onChange={(e) => setConfirmationCode(e.target.value)}
-                    className="input input-bordered w-full text-center tracking-widest"
-                    placeholder="Enter code"
+                    onChange={(e) => setConfirmationCode(e.target.value.trim())}
+                    className="input input-bordered w-full text-center tracking-widest text-lg"
+                    placeholder="Enter 5-digit code"
                     maxLength={5}
+                    pattern="\d{5}"
+                    title="Enter the 5-digit code"
                     required
                   />
                   <div className="flex flex-col sm:flex-row gap-2 mt-4">
                     <button
                       type="button"
                       onClick={() => {setShowCodeConfirmation(false); setConfirmationCode("");}}
-                      className="btn btn-ghost flex-1"
+                      className="btn btn-ghost flex-1 order-3 sm:order-1"
                     >
                       Cancel
                     </button>
                      <button
                       type="button"
                       onClick={handleResendDeleteOTP}
-                      className="btn btn-outline btn-warning flex-1"
+                      className="btn btn-outline btn-warning flex-1 order-2"
                     >
                       Resend Code
                     </button>
                     <button
                       type="submit"
-                      className="btn btn-success flex-1"
+                      className="btn btn-success flex-1 order-1 sm:order-3"
+                      disabled={confirmationCode.length !== 5}
                     >
                       Submit & Delete
                     </button>

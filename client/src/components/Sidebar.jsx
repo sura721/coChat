@@ -102,7 +102,6 @@ const Sidebar = () => {
             </div>
           </>
         )}
-        {/* Profile Icon for collapsed sidebar */}
         {selectedUser && (
           <Link 
             to="/profile" 

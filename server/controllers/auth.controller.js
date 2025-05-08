@@ -240,30 +240,75 @@ export const logout = (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic, bio } = req.body;
+    const { fullname, username, bio, profilePic } = req.body;
     const userId = req.user._id;
 
-    if (!profilePic && !bio) {
-      return res.status(400).json({ message: "Profile pic or bio is required to update" });
+    if (!fullname && !username && !bio && !profilePic) {
+      return res.status(400).json({ message: "At least one field (fullname, username, bio, or profilePic) is required to update." });
     }
 
-    const updatedData = {}; 
+    const userToUpdate = await User.findById(userId);
+    if (!userToUpdate) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const updatedData = {};
 
     if (profilePic) {
-      const uploadResponse = await cloudinary.uploader.upload(profilePic);
+      if (userToUpdate.profilePic) {
+        try {
+          const publicId = userToUpdate.profilePic.split("/").pop().split(".")[0];
+          await cloudinary.uploader.destroy(publicId);
+        } catch (cloudinaryError) {
+          console.warn("Failed to delete old profile picture from Cloudinary:", cloudinaryError.message);
+        }
+      }
+      const uploadResponse = await cloudinary.uploader.upload(profilePic, {
+        folder: "profile_pics",
+      });
       updatedData.profilePic = uploadResponse.secure_url;
     }
 
-    if (bio) {
+    if (typeof bio !== 'undefined') {
+      if (bio.length > 200) {
+          return res.status(400).json({ message: "Bio cannot exceed 200 characters." });
+      }
       updatedData.bio = bio;
     }
 
-   
-    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, { new: true });
+    if (fullname) {
+        if (fullname.trim() === "") {
+            return res.status(400).json({ message: "Fullname cannot be empty." });
+        }
+        updatedData.fullname = fullname.trim();
+    }
+
+    if (username) {
+        const usernameRegex = /^[a-zA-Z0-9_]{4,16}$/;
+        if (!usernameRegex.test(username)) {
+            return res.status(400).json({ message: "Invalid username format (4-16 chars, letters, numbers, _)." });
+        }
+        if (username !== userToUpdate.username) {
+            const existingUserWithUsername = await User.findOne({ username: username, _id: { $ne: userId } });
+            if (existingUserWithUsername) {
+                return res.status(409).json({ message: 'Username is already taken.', field: 'username' });
+            }
+        }
+        updatedData.username = username;
+    }
+
+    if (Object.keys(updatedData).length === 0) {
+        return res.status(400).json({ message: "No valid data provided for update." });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, { $set: updatedData }, { new: true }).select("-password");
 
     res.status(200).json(updatedUser);
   } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+    if (error.code === 11000 && error.keyValue && error.keyValue.username) {
+        return res.status(409).json({ message: 'Username is already taken (concurrent update).', field: 'username' });
+    }
+    res.status(500).json({ message: "Internal server error while updating profile." });
   }
 };
 
